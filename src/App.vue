@@ -2,7 +2,7 @@
   <div id="app">
     <div class="header">
       <div class="logo">
-        <img src="images/AfterSchool.png" alt="">
+        <img src="@/assets/AfterSchool.png" alt="">
       </div>
       <div class="header-actions">
         <button class="outlined-btn" v-on:click="goToLessons">
@@ -12,9 +12,9 @@
           Go to cart ({{ cart.length }})
         </button>
       </div>
-      <Lesson :lessons="lessons" />
-      <Checkout />
     </div>
+    <Lesson v-if="showLessons" :lessons="lessons" :lessons-loading="lessonsLoading" @add="addToCart($event)" />
+    <Checkout v-else :cart="cart" @empty-cart="cart = []" @remove="removeFromCart($event)"/>
   </div>
 </template>
 
@@ -35,14 +35,7 @@ export default {
       cart: [],
       // field to indicate that lessons is being requested from server
       lessonsLoading: true,
-      // field to show whether order is being submitted
-      orderLoading: false,
-      sortingType: 'nothing',
-      sortingDirection: 'asc',
-      showLessons: true,
-      name: '',
-      phone: '',
-      searchQuery: ''
+      showLessons: true
     }
   },
   created: function () {
@@ -55,57 +48,8 @@ export default {
     goToCheckout: function () {
       this.showLessons = false
     },
-    sortDirection: function (dir) {
-      this.sortingDirection = dir
-      const lessonsCopy = this.lessons.slice(0)
-      this.lessons = lessonsCopy.reverse()
-    },
-    sortLessons: function (type) {
-      this.sortingType = type
-      this.sortingDirection = 'asc'
-      const lessonsCopy = this.lessonsCopy.slice(0)
-      let compare = function () {}
-      switch (type) {
-        case 'nothing': 
-          this.lessons = lessonsCopy
-          break
-        case 'topic': 
-          compare = function (a, b) {
-            if (a.topic.toLowerCase() < b.topic.toLowerCase()) {
-              return -1
-            } else if (b.topic.toLowerCase() < a.topic.toLowerCase()) {
-              return 1
-            }
-            return 0
-          }
-          this.lessons = lessonsCopy.sort(compare)
-          break
-        case 'location': 
-          compare = function (a, b) {
-            if (a.location.toLowerCase() < b.location.toLowerCase()) {
-              return -1
-            } else if (b.location.toLowerCase() < a.location.toLowerCase()) {
-              return 1
-            }
-            return 0
-          }
-          this.lessons = lessonsCopy.sort(compare)
-          break
-        case 'price': 
-          compare = function (a, b) {
-            return a.price - b.price
-          }
-          this.lessons = lessonsCopy.sort(compare)
-          break
-        case 'availability': 
-          compare = function (a, b) {
-            return a.space - b.space
-          }
-          this.lessons = lessonsCopy.sort(compare)
-          break
-      }
-    },
     getLessons: function () {
+      const app = this
       fetch('https://lessons-api-cw.herokuapp.com/collection/lesson').then(function (response) {
         response.json().then(
           function (json) {
@@ -117,85 +61,21 @@ export default {
         )
       })
     },
-    submitOrdersForAllLessons: function () {
-      for (const lessonId of this.uniqueLessonsInCart) {
-        const lessonSpaces = this.cart.filter((lesson) => lesson._id === lessonId).length
-        this.submitOrder(lessonId, lessonSpaces)
+    addToCart: function (lesson) {
+      this.cart.push(lesson)
+      lesson.space--
+    },
+    removeFromCart: function (index) {
+      this.cart.splice(index, 1)
+      // If item being removed is the last item, go back to home, hence set [showLessons] to true
+      if (this.cart.length === 0) {
+        this.showLessons = true
       }
     },
-    submitOrder: function (lessonId, spaces) {
-      this.orderLoading = true
-      fetch('https://lessons-api-cw.herokuapp.com/collection/order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: this.name,
-          phone_number: this.phone,
-          lesson_id: lessonId,
-          no_of_spaces: spaces
-        })
-      }).then(function (response) {
-        response.json().then(function () {
-            // If order is successfully submitted, update lesson spaces
-            app.updateLessonSpaces(lessonId, spaces)
-          }
-        )
-      })
-    },
-    updateLessonSpaces: function (lessonId, spaces) {
-      this.orderLoading = true
-      fetch(`https://lessons-api-cw.herokuapp.com/collection/lesson/${lessonId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          space: 5 - spaces
-        })
-      }).then(function (response) {
-        response.json().then(function () {
-            app.orderLoading = false
-            app.goToLessons()
-            app.cart = []
-          }
-        )
-      })
-    },
-    searchLessons: function (query) {
-      const lessonsCopy = this.lessonsCopy.slice(0)
-      if (query === '') {
-        this.lessons = this.lessonsCopy
-      } else {
-        this.lessonsLoading = true
-        fetch(`https://lessons-api-cw.herokuapp.com/search/lesson?query=${query}`).then(function (response) {
-          response.json().then(
-            function (json) {
-              app.lessons = json
-              app.lessonsLoading = false
-            }
-          )
-        })
-      }
-    }
   },
   computed: {
-    uniqueLessonsInCart () {
-      const lessons = new Set()
-      this.cart.forEach((lesson) => lessons.add(lesson._id))
-      return Array.from(lessons)
-    },
     showCheckout () {
       return this.cart.length > 0
-    },
-    nameValid () {
-      const nameRegex = /^[a-z A-Z]+$/
-      return nameRegex.test(this.name)
-    },
-    phoneNumberValid () {
-      const phoneRegex = /^[\d]+$/
-      return phoneRegex.test(this.phone)
     }
   }
 }
@@ -323,13 +203,13 @@ button:disabled {
 }
 .header + div {
   margin-top: 80px;
-  padding-bottom: 5%;
+  /* padding-bottom: 5%; */
 }
 
 /* Hero Banner Styles */
 .hero-banner {
   height: 350px;
-  background: url(images/background.png) no-repeat center;
+  background: url(assets/background.png) no-repeat center;
   background-size: cover;
   color: #FFFFFF;
   display: grid;
@@ -525,6 +405,11 @@ button:disabled {
 }
 
 /* Media Queries */
+@media screen and (min-width: 1100px) {
+  .filter-container {
+    min-height: 100vh;
+  }
+}
 @media screen and (max-width: 1400px) {
   .lessons-catalog {
     grid-template-columns: repeat(4, 25%);
@@ -590,7 +475,7 @@ button:disabled {
   }
   .header + div {
     margin-top: 60px;
-    padding-bottom: 5%;
+    /* padding-bottom: 5%; */
   }
 
   /*  */
