@@ -130,11 +130,6 @@ export default {
       searchQuery: ''
     }
   },
-  // watch: {
-  //   lessons (val) {
-  //     this.lessonsCopy = [...val]
-  //   }
-  // },
   methods: {
     canAddToCart: function (lesson) {
       return lesson.space > 0
