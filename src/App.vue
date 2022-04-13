@@ -13,8 +13,11 @@
         </button>
       </div>
     </div>
-    <Lesson v-if="showLessons" :lessons="lessons" :lessons-loading="lessonsLoading" @add="addToCart($event)" />
-    <Checkout v-else :cart="cart" @empty-cart="cart = []" @remove="removeFromCart($event)"/>
+    <div v-if="lessonsLoading" class="loader-ctn">
+      <div class="loader"></div>
+    </div>
+    <Lesson v-if="showLessons && !lessonsLoading" :lessons="lessons" :lessons-loading="lessonsLoading" @add="addToCart($event)" />
+    <Checkout v-else-if="!showLessons" :cart="cart" @empty-cart="cart = []" @remove="removeFromCart($event)"/>
   </div>
 </template>
 
@@ -146,6 +149,13 @@ button:disabled {
 }
 
 /* Loader Styles */
+.loader-ctn {
+  background: #00000031;
+  min-height: 100vh;
+  min-width: 100vw;
+  display: grid;
+  place-items: center;
+}
 .loader {
   border: 7px solid #f3f3f3;
   border-radius: 50%;
