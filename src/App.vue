@@ -16,8 +16,8 @@
     <div v-if="lessonsLoading" class="loader-ctn">
       <div class="loader"></div>
     </div>
-    <Lesson v-if="showLessons && !lessonsLoading" :lessons="lessons" :lessons-loading="lessonsLoading" @add="addToCart($event)" />
-    <Checkout v-else-if="!showLessons" :cart="cart" @empty-cart="cart = []" @remove="removeFromCart($event)"/>
+    <Lesson v-if="showLessons && !lessonsLoading" :lessons="lessons" :lessons-loading="lessonsLoading" @addLesson="addToCart($event)" />
+    <Checkout v-else-if="!showLessons" :cart="cart" @empty-cart="cart = []" @removeLesson="removeFromCart($event)"/>
   </div>
 </template>
 
